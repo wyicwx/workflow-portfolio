@@ -3,7 +3,7 @@
 **安装须知:**
 
 ```
-需要Alfred 2 powerpack环境，Alfred是mac下免费软件，Alfred powerpack是付费软件
+需要Alfred 2 Powerpack环境，Alfred是mac下免费软件，Alfred Powerpack是付费软件
 ```
 
 [下载链接](https://github.com/wyicwx/wokrflow-portfolio/raw/master/Downloads/Tencent-portfolio.alfredworkflow)
