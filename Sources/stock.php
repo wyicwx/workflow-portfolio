@@ -35,7 +35,7 @@ class SmartBox extends Workflows
 		}
 
 		if(count($searchData) > 0) {
-			
+
 			$codeArray = array();
 
 			foreach ($searchData as $value) {
@@ -69,7 +69,7 @@ class SmartBox extends Workflows
 	}
 
 	function lastPlaceholder() {
-		$this->result(0, 'http://gu.qq.com/i', '没有找到股票？进入我的自选股查找', null, null);		
+		$this->result(0, 'http://gu.qq.com/i', '没有找到股票？进入我的自选股查找', null, null);
 	}
 }
 
@@ -169,7 +169,15 @@ class Stock
 		$name = $this->name;
 		$code = $this->code;
 
-		$return = sprintf("[%s] %-20s %-12s", $typeName, $name, $code);
+		$nameBytes  = strlen($name);
+		$nameLength = mb_strlen($name, 'UTF-8');
+		$enCounts = ($nameLength*3 - $nameBytes) / 2;
+		$cnCounts = ($nameBytes    - $nameLength)/ 2;
+
+		// Hard fixing the unproportional spacing problem.
+		$hardLength = ceil(30 - $cnCounts/2 - $enCounts/1.5);
+		$return = sprintf("[%s] %-".$hardLength."s %-12.12s", $typeName, $name, $code);
+
 		if($this->qt) {
 			if(!$this->qt->getErrorStatus()) {
 				$price = $this->qt->getPrice();
@@ -233,7 +241,7 @@ class Stock
 
 
 
-class StockQt 
+class StockQt
 {
     protected $items = array();
 
@@ -273,7 +281,7 @@ class StockQt
 		// get data as string
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		// set timeout
-		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);       
+		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_URL, $url);
 	    if(defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')){
 			curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
