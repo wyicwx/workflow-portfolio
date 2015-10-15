@@ -7,6 +7,7 @@
  */
 require_once("workflows.php");
 require_once("filecache.php");
+require_once("qt.php");
 
 class SmartBox extends Workflows
 {
@@ -49,11 +50,14 @@ class SmartBox extends Workflows
 				if($d[0] == 'hk') {
 					$dCode = 'r_'.$dCode;
 				}
+				if($d[0] == 'jj') {
+					$dCode = 's_'.$dCode;
+				}
 				array_push($codeArray, $dCode);
 			}
 
 			$qt = new StockQt();
-			$qt->getQt(implode(',', $codeArray));
+			$qt->fetchQt(implode(',', $codeArray));
 
 			foreach ($searchData as $key => $value) {
 				$stock = new Stock($value, $qt);
@@ -88,7 +92,7 @@ class Stock
 
 	private $qt;
 
-	function __construct($data, $qt) {
+	function __construct($data, $stockQt) {
 		$result = explode("~", $data);
 		if($result[0] == 'us') {
 			if(preg_match('/(\..*)$/', $result[1], $re)) {
@@ -102,8 +106,23 @@ class Stock
 		$this->name = $result[2];
 		$this->pinyin = $result[3];
 		$this->category = $result[4];
-		if($qt->getItem($this->fullCode)) {
-			$this->qt = new StockQt($qt->getItem($this->fullCode));
+		$qtData = $stockQt->getItem($this->fullCode);
+		if($qtData) {
+			switch($this->market) {
+				case 'sh':
+				case 'sz':
+					$this->qt = new QT($qtData, $this->market, $this->category);
+				break;
+				case 'hk':
+					$this->qt = new QTHk($qtData, $this->market, $this->category);
+				break;
+				case 'us':
+					$this->qt = new QTUs($qtData, $this->market, $this->category);
+				break;
+				case 'jj':
+					$this->qt = new QTJj($qtData, $this->market, $this->category);
+				break;
+			}
 		}
 
 		$this->parse();
@@ -150,13 +169,21 @@ class Stock
 		$name = $this->name;
 		$code = $this->code;
 
-		$return = sprintf("[%s] %-16s %-12s", $typeName, $name, $code);
+		$return = sprintf("[%s] %-20s %-12s", $typeName, $name, $code);
 		if($this->qt) {
 			if(!$this->qt->getErrorStatus()) {
 				$price = $this->qt->getPrice();
-				$percent = $this->qt->getPercent();
-
-				$return .= sprintf(" %-12s %-12s", $price, $percent);
+				if($this->market != 'jj') {
+					$percent = $this->qt->getPercent();
+					$return .= sprintf(" %-12s %-12s", $price, $percent);
+				} else {
+					if(!$this->qt->isHBType()) {
+						$return .= sprintf(" 净值:%-12s", $price);
+					} else {
+						$price = $this->qt->getEarnPer();
+						$return .= sprintf(" 万份收益:%-12s", $price);
+					}
+				}
 			} else {
 				$status = $this->qt->getErrorStatus();
 				$return .= " {$status}";
@@ -177,12 +204,22 @@ class Stock
 
 		if($this->qt) {
 			if(!$this->qt->getErrorStatus()) {
-				$lastClose = $this->qt->getLastClosePrice();
-				$todayOpen = $this->qt->getTodayOpenPrice();
-				$hPrice = $this->qt->getHighPrice();
-				$lPrice = $this->qt->getLowPrice();
+				if($this->market != 'jj') {
+					$lastClose = $this->qt->getLastClosePrice();
+					$todayOpen = $this->qt->getTodayOpenPrice();
+					$hPrice = $this->qt->getHighPrice();
+					$lPrice = $this->qt->getLowPrice();
 
-				$return .= " 高:{$hPrice}  低:{$lPrice}  收:{$lastClose}  开:{$todayOpen}";
+					$return .= " 高:{$hPrice}  低:{$lPrice}  收:{$lastClose}  开:{$todayOpen}";
+				} else {
+					if(!$this->qt->isHBType()) {
+						$valueDate = $this->qt->getValueDate();
+						$return .= " 净值更新时间:{$valueDate}";
+					} else {
+						$yearRadio = $this->qt->getYearRadio();
+						$return .= " 七日年化收益率:{$yearRadio}";
+					}
+				}
 			}
 		}
 
@@ -194,52 +231,17 @@ class Stock
 	}
 }
 
-function getCurlData($url, $port=80,$timeout=10)
-{
-	$ch = curl_init();
-	 // set port
-	curl_setopt($ch, CURLOPT_PORT, $port);
-	// drop http header
-	curl_setopt($ch, CURLOPT_HEADER, FALSE);
-	// get data as string
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-	// set timeout
-	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);       
-	curl_setopt($ch, CURLOPT_URL, $url);
-    if(defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')){
-		curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-	}
 
-	// execute fetch
-	$data = curl_exec($ch);
-	$errno = curl_errno($ch);
-	if($errno > 0) {
-		//try one time
-		$data = curl_exec($ch);
-		$errno = curl_errno($ch);
-		if($errno > 0){
-			return false;
-		}
-	}
-	if(empty($data)) {
-	    return array();
-	}
-	return $data;
-}
 
 class StockQt 
 {
     protected $items = array();
 
-    function __construct($qtData = false) {
-    	if($qtData) {
-    		$this->items = $qtData;
-    	}
-    }
     //查询行情数据
-    public function getQt($stock_code){
+    public function fetchQt($stock_code){
         $url = 'http://qt.gtimg.cn/q='.$stock_code;
-        $data = getCurlData($url, 80, 2);
+        $data = $this->getCurlData($url, 80, 2);
+        $data = iconv("GB2312", "UTF-8//IGNORE", $data);
         $data = trim($data);
     	$edatas = explode(';', $data);
 
@@ -252,98 +254,46 @@ class StockQt
             }
         }
 	}
-	//股票名称
-	public function getName($code=''){
-		if($code){
-			return $this->items[$code][1];
-		}else{
-			return $this->items[1];
-		}
-	}
-	//获得涨跌幅
-	public function getPercent($code='') {
-		$ret;
-		if($code){
-			$ret = $this->items[$code][32];
-		}else{
-			$ret = $this->items[32];
-		}
-
-		if($ret > 0) {
-			$ret = '+'.$ret;
-		}
-
-		return $ret.'%';
-
-	}
-	//得到当前市价
-    public function getPrice($code=''){
-        if($code){
-			return $this->items[$code][3];
-		}else{
-			return $this->items[3];
-		}
-	}
-    //得到昨收价
-    public function getLastClosePrice($code=''){
-        if($code){
-			return $this->items[$code][4];
-		}else{
-			return $this->items[4];
-		}
-	}
-    //得到今开盘
-    public function getTodayOpenPrice($code=''){
-        if($code){
-			return $this->items[$code][5];
-		}else{
-			return $this->items[5];
-		}
-	}
-	//最低
-    public function getHighPrice($code=''){
-        if($code){
-			return $this->items[$code][47];
-		}else{
-			return $this->items[47];
-		}
-	}
-	//最高
-    public function getLowPrice($code=''){
-        if($code){
-			return $this->items[$code][48];
-		}else{
-			return $this->items[48];
-		}
-	}
 	//获得数据
 	public function getItem($code) {
-		return $this->items[$code];
-	}
-
-	public function getStatus($code='') {
-		if($code){
-			return $this->items[$code][40];
-		}else{
-			return $this->items[40];
+		$data = $this->items[$code];
+		if($data) {
+			return $data;
+		} else {
+			return false;
 		}
 	}
 
-	public function getErrorStatus() {
-		$status = $this->getStatus();
-		switch($status) {
-			case 'D':
-				return '退市';
-			case 'S':
-				return '停牌';
-			case 'U':
-				return '未上市';
-			case 'Z':
-				return '暂停上市';
-			break;
+	private function getCurlData($url, $port=80,$timeout=10) {
+		$ch = curl_init();
+		 // set port
+		curl_setopt($ch, CURLOPT_PORT, $port);
+		// drop http header
+		curl_setopt($ch, CURLOPT_HEADER, FALSE);
+		// get data as string
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		// set timeout
+		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);       
+		curl_setopt($ch, CURLOPT_URL, $url);
+	    if(defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')){
+			curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 		}
 
-		return false;
+		// execute fetch
+		$data = curl_exec($ch);
+		$errno = curl_errno($ch);
+		if($errno > 0) {
+			//try one time
+			$data = curl_exec($ch);
+			$errno = curl_errno($ch);
+			if($errno > 0){
+				return false;
+			}
+		}
+		if(empty($data)) {
+		    return array();
+		}
+		return $data;
 	}
 }
 ?>

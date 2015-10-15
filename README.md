@@ -14,8 +14,22 @@
 
 #### 示例
 
-![00700](https://github.com/wyicwx/wokrflow-portfolio/blob/master/00700.jpg)
+![00700](https://github.com/wyicwx/wokrflow-portfolio/blob/master/00700.png)
 
-![沪深港美](https://github.com/wyicwx/wokrflow-portfolio/blob/master/hsgm.jpg)
+![沪深港美](https://github.com/wyicwx/wokrflow-portfolio/blob/master/hsgm.png)
+
+![基金](https://github.com/wyicwx/wokrflow-portfolio/blob/master/jj.png)
 
 涵盖沪深港美全市场实时行情
+
+#### 更新log
+
++ 2015-10-15 0.2
+
+搜索结果增加行情数据
+
+增加搜索结果缓存
+
++ 2015-10-13 0.1
+
+首个版本，支持搜索股票数据
