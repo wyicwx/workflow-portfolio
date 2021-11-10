@@ -1,0 +1,13 @@
+{
+  "alfredworkflow" : {
+    "category" : "Tools",
+    "readme" : "All information provided \"as is\" for informational purposes only, not intended for trading purposes or advice. Neither Tencent nor any of independent providers is liable for any informational errors, incompleteness, or delays, or for any actions taken in reliance on information contained herein. By accessing the Tencent site, you agree not to redistribute the information found therein.\n\n免责声明：本软件提供的信息仅供参考，不构成任何投资建议，投资者据此操作，风险自担。一切有关涉及上市公司的准确信息，请以沪深交易所公告为准。您使用本软件或者进入腾讯网站即表示同意以上声明。股市有风险，入市需谨慎。",
+    "createdby" : "Weixin Chen",
+    "downloadurl" : "",
+    "version" : "0.3",
+    "bundleid" : "com.alfredapp.weixinchen.portfolio",
+    "description" : "Tencent Portfolilo v0.3",
+    "name" : "腾讯自选股",
+    "webaddress" : "http:\/\/finance.qq.com\/products\/portfolio"
+  }
+}

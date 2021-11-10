@@ -4,7 +4,7 @@ class QT
 	private $market;
 	private $category;
 
-	function __construct($qtData = false, $market, $category) {
+	function __construct($qtData, $market, $category) {
 		$this->market = $market;
 		$this->category = $category;
 		if($qtData) {

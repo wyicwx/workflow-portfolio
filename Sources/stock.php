@@ -12,7 +12,7 @@ require_once("qt.php");
 class SmartBox extends Workflows
 {
 	private $keyword = "";
-	private $queryUrl = "http://smartbox.gtimg.cn/s3/?&t=all&format=jsonp&q=";
+	private $queryUrl = "https://smartbox.gtimg.cn/s3/?&t=all&format=jsonp&q=";
 
 	function setKeyWord($keyword) {
 		$this->keyword = $keyword;
@@ -20,10 +20,8 @@ class SmartBox extends Workflows
 
 	function search() {
 		$cacheData = FileCache::get('__cache__'.$this->keyword);
-
 		if(!$cacheData) {
 			$url = $this->queryUrl.urlencode($this->keyword);
-
 			$request_result = $this->request($url);
 			$json = json_decode($request_result);
 			$searchData = $json->data;
@@ -35,7 +33,7 @@ class SmartBox extends Workflows
 		}
 
 		if(count($searchData) > 0) {
-
+			
 			$codeArray = array();
 
 			foreach ($searchData as $value) {
@@ -55,7 +53,6 @@ class SmartBox extends Workflows
 				}
 				array_push($codeArray, $dCode);
 			}
-
 			$qt = new StockQt();
 			$qt->fetchQt(implode(',', $codeArray));
 
@@ -69,7 +66,7 @@ class SmartBox extends Workflows
 	}
 
 	function lastPlaceholder() {
-		$this->result(0, 'http://gu.qq.com/i', '没有找到股票？进入我的自选股查找', null, null);
+		$this->result(0, 'https://gu.qq.com/i', '没有找到股票？进入我的自选股查找', null, null);		
 	}
 }
 
@@ -177,7 +174,6 @@ class Stock
 		// Hard fixing the unproportional spacing problem.
 		$hardLength = ceil(30 - $cnCounts/2 - $enCounts/1.5);
 		$return = sprintf("[%s] %-".$hardLength."s %-12.12s", $typeName, $name, $code);
-
 		if($this->qt) {
 			if(!$this->qt->getErrorStatus()) {
 				$price = $this->qt->getPrice();
@@ -230,25 +226,24 @@ class Stock
 				}
 			}
 		}
-
 		return $return;
 	}
 
 	function getLink() {
-		return "http://gu.qq.com/".$this->fullCode;
+		return "https://gu.qq.com/".$this->fullCode;
 	}
 }
 
 
 
-class StockQt
+class StockQt 
 {
     protected $items = array();
 
     //查询行情数据
     public function fetchQt($stock_code){
-        $url = 'http://qt.gtimg.cn/q='.$stock_code;
-        $data = $this->getCurlData($url, 80, 2);
+        $url = 'https://qt.gtimg.cn/q='.$stock_code;
+        $data = $this->getCurlData($url, 443, 5);
         $data = iconv("GB2312", "UTF-8//IGNORE", $data);
         $data = trim($data);
     	$edatas = explode(';', $data);
@@ -272,7 +267,7 @@ class StockQt
 		}
 	}
 
-	private function getCurlData($url, $port=80,$timeout=10) {
+	private function getCurlData($url, $port=443,$timeout=10) {
 		$ch = curl_init();
 		 // set port
 		curl_setopt($ch, CURLOPT_PORT, $port);
@@ -281,7 +276,7 @@ class StockQt
 		// get data as string
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		// set timeout
-		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);       
 		curl_setopt($ch, CURLOPT_URL, $url);
 	    if(defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')){
 			curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);

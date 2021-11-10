@@ -38,15 +38,15 @@ class Workflows {
 			$this->bundle = $bundleid;
 		endif;
 
-		$this->cache = $this->home. "/Library/Caches/com.runningwithcrayons.Alfred-2/Workflow Data/".$this->bundle;
-		$this->data  = $this->home. "/Library/Application Support/Alfred 2/Workflow Data/".$this->bundle;
+		$this->cache = $this->home. "/Library/Caches/com.runningwithcrayons.Alfred/Workflow Data/".$this->bundle;
+		$this->data  = $this->home. "/Library/Application Support/Alfred/Workflow Data/".$this->bundle;
 
 		if ( !file_exists( $this->cache ) ):
-			exec("mkdir '".$this->cache."'");
+			exec("mkdir -p '" .$this->cache. "'");
 		endif;
 
 		if ( !file_exists( $this->data ) ):
-			exec("mkdir '".$this->data."'");
+			exec("mkdir -p '".$this->data."'");
 		endif;
 
 		$this->results = array();
@@ -166,7 +166,6 @@ class Workflows {
 	* @return - XML string representation of the array
 	*/
 	public function toxml( $a=null, $format='array' ) {
-
 		if ( $format == 'json' ):
 			$a = json_decode( $a, TRUE );
 		endif;
@@ -212,7 +211,6 @@ class Workflows {
 				endif;
 			endforeach;
 		endforeach;
-
 		return $items->asXML();								// Return XML string representation of the array
 
 	}
@@ -382,7 +380,6 @@ class Workflows {
 		else:
 			$b = $this->data."/".$b;
 		endif;
-
 		if ( is_array( $a ) ):
 			$a = json_encode( $a );
 			file_put_contents( $b, $a );
